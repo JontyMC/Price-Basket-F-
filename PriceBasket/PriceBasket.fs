@@ -26,17 +26,14 @@ let getSelectedProducts productIds =
     productIds
     |> Seq.map productById
 
-let scheduledPercentageOffer qualifyingProduct percentageDiscount startDate endDate =
+let scheduledPercentageOffer qualifyingProduct percentageDiscount now startDate endDate =
     { new SpecialOffer with
         member this.IsValid() =
-            let isBetweenTimes startDate endDate =
-                let now = System.DateTimeOffset.UtcNow
-
-                startDate < now && now < endDate
+            let isBetweenTimes startDate endDate = startDate < now && now < endDate
 
             isBetweenTimes startDate endDate
 
-        member this.DisplayText() = sprintf "%s %s off" qualifyingProduct.Id (percentageDiscount.ToString())
+        member this.DisplayText() = sprintf "%s %s%% off" qualifyingProduct.Id (percentageDiscount.ToString())
 
         member this.CalculateDiscount(products) =
             let individualDiscount product = product.Price * percentageDiscount / 100m
@@ -69,8 +66,10 @@ let halfPriceOffer qualifyingProduct quantityToQualify discountProduct =
             (decimal)qualifyingCount * discountProduct.Price / 2m
     }
 
-let availableOffers = [
-    scheduledPercentageOffer (productById "Apples") 10m (DateTimeOffset(2012, 1, 20, 0, 0, 0, TimeSpan.Zero)) (DateTimeOffset(2013, 1, 27, 0, 0, 0, TimeSpan.Zero))
+let date year month day = DateTimeOffset(year, month, day, 0, 0, 0, TimeSpan.Zero)
+
+let availableOffers now = [
+    scheduledPercentageOffer (productById "Apples") 10m now (date 2012 1 20) (date 2012 1 27)
     halfPriceOffer (productById "Soup") 2 (productById "Bread")
 ]
 
@@ -109,12 +108,12 @@ let renderTotal subtotal appliedOffers total =
         |> Seq.iter displayOffer
     printfn "Total: %s" (formatPrice total)
 
-let totalBasket productIds =
+let totalBasket productIds now =
     let selectedProducts = getSelectedProducts productIds
 
     let subtotal = subtotal selectedProducts
 
-    let appliedOffers = applyOffers availableOffers selectedProducts
+    let appliedOffers = applyOffers (availableOffers now) selectedProducts
 
     let total = total subtotal appliedOffers
 

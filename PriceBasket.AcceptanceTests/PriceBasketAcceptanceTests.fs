@@ -8,19 +8,22 @@ open Xunit
 open Xunit.Extensions
 open PriceBasket
 
-let getPriceBasketOutput productIds =
+let getPriceBasketOutput productIds now =
     let fakeConsole = new StringWriter();
 
     Console.SetOut(fakeConsole)
-    totalBasket productIds
+    totalBasket productIds now
 
     fakeConsole.ToString()
 
-let matchBasketOutput productIds expected =
-    let output = getPriceBasketOutput productIds
+let matchBasketOutputAtPointInTime productIds now expected =
+    let output = getPriceBasketOutput productIds now
 
     output
     |> should equal expected
+
+let matchBasketOutput productIds expected =
+    matchBasketOutputAtPointInTime productIds (date 2012 1 23) expected
 
 [<Fact>]
 let ``No products in basket``() =
@@ -44,4 +47,4 @@ let ``Percentage discount applies``() =
 
 [<Fact>]
 let ``Percentage discount scheduled in future``() =
-    matchBasketOutput ["Apples"; "Bread"; "Milk"] "Subtotal: £3.10\r\nApples 10% off: -£0.10\r\nTotal: £3.00\r\n"
+    matchBasketOutputAtPointInTime ["Apples"; "Bread"; "Milk"] (date 2099 1 23) "Subtotal: £3.10\r\n(No offers available)\r\nTotal: £3.10\r\n"
